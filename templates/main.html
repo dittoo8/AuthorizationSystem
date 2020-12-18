@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<a lang="en">
+<head>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <script>history.replaceState({}, null, location.pathname);</script>
+    <meta charset="UTF-8">
+    <title>main</title>
+</head>
+<a>
+<h1>sohyeon authorization project</h1>
+{% if name %}
+    <h1>{{ name }}님 안녕하세요!</h1>
+    <br><a href="/logout">logout</a></a>
+{#    {% if isManager == 1 %}#}
+    <a href="/user_manage">user manage</a></a>
+{#    {% endif %}#}
+{% else %}
+<br><a href="/login">log in</a> <a href="/register">sign up</a>
+{% endif %}
+</body>
+</html>

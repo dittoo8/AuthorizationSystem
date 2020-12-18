@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <meta charset="UTF-8">
+    <title>login</title>
+</head>
+<body>
+<p id="loginForm">login</p>
+    <input type="text" id="email1" placeholder="email"><br>
+    <input type="text" id="password1" placeholder="password"><br>
+    <label><input type="checkbox" name="auto_login" value="" id="auto_login">자동로그인</label>
+    <input type="button" id="execute" value="로그인"><br>
+
+
+    <script>
+        $('#execute').click(function(){
+            var email = $('#email1').val();
+            var password = $('#password1').val();
+            var auto_login = $('#auto_login').is(":checked");
+
+            var postdata = {
+                'email':email,
+                'password':password,
+                'auto_login': auto_login
+            }
+            $.ajax({
+                type: 'POST',
+                url: '{{ url_for('login') }}',
+                data: JSON.stringify(postdata),
+                dataType : 'JSON',
+                contentType: "application/json",
+                success: function(data){
+                    if(data.loginCk == 1) {
+                        alert(data.userName + '님 ! 안녕하세요 !')
+                        window.location.href = '/setcookie?auth='+data.user_auth+'&&email='+data.user_email+'&&auto_login='+data.auto_login
+                    }else if(data.loginCk == 0){
+                        alert('로그인에 실패했습니다. 이메일 비밀번호를 확인해과주세요!')
+                    }else if (data.loginCk == 2){
+                        alert('모든 항목을 입력해주세요.')
+                    }else{
+                        alert('DB 오류')
+                    }
+                },
+                error: function(request, status, error){
+                    alert('ajax 통신 실패')
+                    alert(error);
+                }
+            })
+        })
+    </script>
+<a href='/main'>back to main</a><br>
+<a href='/find_password'>find password</a><br>
+<a href='/email'>email test</a><br>
+<a href='/register'>sign up</a>
+</body>
+</html>

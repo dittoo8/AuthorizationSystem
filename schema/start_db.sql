@@ -1,0 +1,12 @@
+CREATE DATABASE userDB default CHARACTER SET UTF8;
+
+USE userDB;
+
+CREATE TABLE userTable(
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(30) NOT NULL,
+    email VARCHAR(200) NOT NULL UNIQUE ,
+    hashed_password VARCHAR(255) NOT NULL,
+    salt VARCHAR(255) NOT NULL,
+    isManager boolean DEFAULT False
+)CHARSET=utf8

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <meta charset="UTF-8">
+    <title>registe</title>
+</head>
+<body>
+<p id="sighUpForm">sign up</p>
+    <input type="text" id="email1" placeholder="email"><br>
+    <input type="text" id="name1" placeholder="name"><br>
+    <input type="text" id="password1" placeholder="password"><br>
+    <input type="button" id="execute" value="회원가입"><br>
+
+
+    <script>
+        $('#execute').click(function(){
+            var email = $('#email1').val();
+            var name = $('#name1').val();
+            var password = $('#password1').val();
+
+            var postdata = {
+                'email':email,'name': name, 'password':password
+            }
+            $.ajax({
+                type: 'POST',
+                url: '{{url_for("register")}}',
+                data: JSON.stringify(postdata),
+                dataType : 'JSON',
+                contentType: "application/json",
+                success: function(data){
+                    if(data.signCk == 1){
+                        alert('회원가입을 축하합니다 ! 가입한 아이디로 로그인해주세요.')
+                        window.location.href = '/main'
+                    }else if(data.signCk == 0){
+                        alert('이미 등록된 email입니다!')
+                    }else if (data.signCk == 2){
+                        alert('모든 항목을 입력해주세요.')
+                    }else {
+                        alert('DB error')
+                    }
+                },
+                error: function(request, status, error){
+                    alert('ajax 통신 실패')
+                    {#alert(error);#}
+                },
+            })
+        })
+    </script>
+<a href="/login">login</a><br>
+<a href="/main">back to main</a>
+</body>
+</html>

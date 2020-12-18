@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <meta charset="UTF-8">
+    <title>user_management</title>
+</head>
+<body>
+<h1>회원목록</h1>
+{% for user in userData %}
+    {{ loop.index }}.
+이메일 : {{ user[0] }} 이름 : {{ user[1] }} <br>
+{% endfor %}
+<a href="/main">back to main</a>
+</body>
+</html>
