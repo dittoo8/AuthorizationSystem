@@ -8,9 +8,8 @@ from flask_restx import Resource, Api
 from auth import Auth
 import requests
 import datetime
-
-# from flask_restful import Resource
-# from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_mail import Mail, Message
+from random import randint
 
 app = Flask(__name__)
 app.secret_key = '123'
@@ -19,6 +18,17 @@ api = Api(app)
 api.add_namespace(Auth, '/auths')
 
 app.config['JWT_SECRET_KEY'] = 'jwt-secret'
+
+mail= Mail(app)
+
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
+
+
 
 
 def valid_data(data):  # 입력된 데이터의 모든 값이 존재하는지 확인
@@ -120,15 +130,36 @@ def login():
 # # 이메일 인증 클릭시 이동하는 곳 ?
 # @app.route('/newPass/<email>', methods=['GET'])
 
+@app.route("/email", methods=['GET'])
+def email():
+    if request.method=='POST':
+        #setcookie 애서 otp 넣기?
+        otp = randint(100000, 999999)
+        msg = Message('Hello', sender = 'sohyun1018@gmail.com', recipients = ['sohyun1018@gmail.com'])
+        msg.body = "578324"
+        mail.send(msg)
+        return "Sent"
 
-@app.route('/find_password', methods=['GET'])
+@app.route('/find_password', methods=['POST','GET'])
 def find_password():
+    if request.method == 'POST':
+        data = request.get_json()
+        if valid_data(data):
+            valid_user_check = requests.post('http://0.0.0.0:5000/auths/validate_user', data={
+                'email': data['email'],
+                'name': data['name']
+            }).json()
+            user_ck = valid_user_check[0]['result']
+            return jsonify(result='success', user_ck=user_ck)
+        else:
+            user_ck = 2
+            return jsonify(result='success', user_ck=user_ck)
     # data = request.get_json()
     # 입력된 이메일로 비밀번호 찾기 메일 전송
 
     ##이메일링크 클릭 시 비밀번호 재설정페이지로 redirect ..?
-
-    return render_template('find_password.html')
+    else:
+        return render_template('find_password.html')
 
 
 @app.route('/logout')

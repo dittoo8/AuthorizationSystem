@@ -84,6 +84,43 @@ class AuthRegister(Resource):
             'result': sign_ck
         }, 200)
 
+@Auth.route('/validate_user')
+class validate_user(Resource):
+    @Auth.expect(user_fields_auth)
+    @Auth.doc(responses={200: 'Success'})
+    @Auth.doc(responses={404: 'User Not Found'})
+    @Auth.doc(responses={500: 'Auth Failed'})
+    def post(self):
+        email = request.form['email']
+        name = request.form['name']
+
+        try:
+            conn = mysql.connector.connect(host='localhost',
+                                           database='userDB',
+                                           user='root',
+                                           password='1018')
+            cursor = conn.cursor()
+            valid_user_sql = "SELECT count(*) FROM userDB.userTable" \
+                             " WHERE email = '%s' AND name = '%s'" % (email, name);
+            print(valid_user_sql)
+            cursor.execute(valid_user_sql)
+            valid_user_data = cursor.fetchall()
+            error_ck = False
+        except mysql.connector.Error as Error:
+            print(Error)
+            error_ck = True
+            conn.rollback()
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+        if error_ck:
+            return jsonify({'result': 0}, 500)
+
+        if valid_user_data[0][0] == 1:
+            return jsonify({'result': 1}, 200)
+        else:
+            return jsonify({'result': 0}, 500)
 
 @Auth.route('/login')
 class AuthLogin(Resource):
@@ -116,10 +153,6 @@ class AuthLogin(Resource):
                 return jsonify({
                     'result': Error
                 })
-
-        # print('login data')
-        # print(len(login_user_data))
-        # print(login_user_data[0][0])
         if len(login_user_data)==1 and bcrypt.checkpw(password.encode(encoding='utf-8'), login_user_data[0][0].encode(encoding="utf-8")):
             token = jwt.encode({'id': login_user_data[0][4]}, str(login_user_data[0][4]), algorithm="HS256").decode(
                     "UTF-8")
