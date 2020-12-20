@@ -28,6 +28,44 @@ jwt_fields = Auth.model('JWT', {
                                    example="eyJ0e~~~~~~~~~")
 })
 
+@Auth.route('/update_password')
+class validate_user(Resource):
+    @Auth.expect(user_fields_auth)
+    @Auth.doc(responses={200: 'Success'})
+    @Auth.doc(responses={404: 'User Not Found'})
+    @Auth.doc(responses={500: 'Auth Failed'})
+    def post(self):
+        email = request.form['email']
+        password = request.form['password']
+        print(email)
+        print(password)
+        salt = bcrypt.gensalt()
+        hash_password = bcrypt.hashpw(password.encode("utf-8"), salt)
+
+        try:
+            conn = mysql.connector.connect(host='localhost',
+                                           database='userDB',
+                                           user='root',
+                                           password='1018')
+            cursor = conn.cursor()
+            update_password_sql = "UPDATE userTable SET hashed_password = '%s', salt= '%s' WHERE email='%s'"\
+                                  % (hash_password.decode(), salt.decode(), email)
+            cursor.execute(update_password_sql)
+            conn.commit()
+            error_ck = False
+        except mysql.connector.Error as Error:
+            print(Error)
+            error_ck = True
+            conn.rollback()
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+        if error_ck:
+            return jsonify({'result': 0}, 500)
+        else:
+            return jsonify({'result': 1}, 200)
+
 
 @Auth.route('/register')
 class AuthRegister(Resource):
@@ -84,6 +122,7 @@ class AuthRegister(Resource):
             'result': sign_ck
         }, 200)
 
+
 @Auth.route('/validate_user')
 class validate_user(Resource):
     @Auth.expect(user_fields_auth)
@@ -102,7 +141,6 @@ class validate_user(Resource):
             cursor = conn.cursor()
             valid_user_sql = "SELECT count(*) FROM userDB.userTable" \
                              " WHERE email = '%s' AND name = '%s'" % (email, name);
-            print(valid_user_sql)
             cursor.execute(valid_user_sql)
             valid_user_data = cursor.fetchall()
             error_ck = False

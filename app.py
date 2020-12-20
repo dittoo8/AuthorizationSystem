@@ -1,4 +1,4 @@
-from flask import Flask, make_response
+from flask import Flask, make_response, session
 from flask import request, render_template, flash, redirect, url_for, jsonify, json
 from flask import redirect
 import mysql.connector
@@ -19,16 +19,15 @@ api.add_namespace(Auth, '/auths')
 
 app.config['JWT_SECRET_KEY'] = 'jwt-secret'
 
-mail= Mail(app)
+mail = Mail(app)
 
-app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-
+app.config['MAIL_USERNAME'] = '****'
+app.config['MAIL_PASSWORD'] = '****'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
-
-
 
 
 def valid_data(data):  # 입력된 데이터의 모든 값이 존재하는지 확인
@@ -84,8 +83,8 @@ def setcookie():
         email = request.args.get('email')
         auto_login = request.args.get('auto_login')
         res = make_response(redirect('main'))
-        if  auto_login == 'true':
-            expire_date = datetime.datetime.now()+datetime.timedelta(days=90)
+        if auto_login == 'true':
+            expire_date = datetime.datetime.now() + datetime.timedelta(days=90)
             res.set_cookie('auto_login', auto_login, expires=expire_date)
         else:
             expire_date = datetime.datetime.now() + datetime.timedelta(minutes=30)
@@ -127,20 +126,56 @@ def login():
         return render_template('login.html')
 
 
-# # 이메일 인증 클릭시 이동하는 곳 ?
-# @app.route('/newPass/<email>', methods=['GET'])
+# 비밀번호 설정 페이
+@app.route('/new_password', methods=['GET', 'POST'])
+def new_password():
+    if request.method == 'GET':
+        user_email = request.args.get('email')
+        return render_template('new_password.html', user_email=user_email)
+    elif request.method == 'POST':
+        data = request.get_json()
+        if valid_data(data):
+            if data['password'] == data['password_check']:
+                # DB에 비밀번호 업데이트
+                update_password_result = requests.post('http://0.0.0.0:5000/auths/update_password', data={
+                    'email': data['email'],
+                    'password': data['password']
+                }).json()
+                new_pass_ck = update_password_result[0]['result']
+            else:
+                new_pass_ck = 0
+        else:
+            new_pass_ck = 2
+        return jsonify(result='success', pass_check=new_pass_ck)
 
-@app.route("/email", methods=['GET'])
-def email():
-    if request.method=='POST':
-        #setcookie 애서 otp 넣기?
+
+@app.route("/send_email", methods=['GET'])
+def send_email(user_email):
+    ## test code
+    # otp = randint(100000, 999999)
+    # session[user_email] = otp
+    # print('otp code : ' + str(otp))
+    if request.method == 'POST':
         otp = randint(100000, 999999)
-        msg = Message('Hello', sender = 'sohyun1018@gmail.com', recipients = ['sohyun1018@gmail.com'])
-        msg.body = "578324"
+        msg = Message('비밀번호 찾기 인증 메일', sender=user_email, recipients=[user_email])
+        msg.body = '안녕하세요. 인증번호는 ' + str(otp) + '입니다.'
         mail.send(msg)
-        return "Sent"
+        session[user_email] = otp
 
-@app.route('/find_password', methods=['POST','GET'])
+
+@app.route('/check_otp', methods=['POST'])
+def check_otp():
+    data = request.get_json()
+    email = data['email']
+    input_otp = data['otp_number']
+    if session[email] == int(input_otp):
+        session.pop(email, None)
+        return jsonify(result='success', otp_check=True)
+    else:
+        return jsonify(result='success', otp_check=False)
+
+
+@app.route('/find_password', methods=['POST', 'GET'])
 def find_password():
     if request.method == 'POST':
         data = request.get_json()
@@ -150,14 +185,12 @@ def find_password():
                 'name': data['name']
             }).json()
             user_ck = valid_user_check[0]['result']
+            if user_ck == 1:
+                send_email(data['email'])
             return jsonify(result='success', user_ck=user_ck)
         else:
             user_ck = 2
             return jsonify(result='success', user_ck=user_ck)
-    # data = request.get_json()
-    # 입력된 이메일로 비밀번호 찾기 메일 전송
-
-    ##이메일링크 클릭 시 비밀번호 재설정페이지로 redirect ..?
     else:
         return render_template('find_password.html')
 
